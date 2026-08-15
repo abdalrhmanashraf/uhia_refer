@@ -367,7 +367,7 @@ export function Presentation() {
       {/* ── Footer ──────────────────────────────────────────────────────── */}
       <footer className="pt-8 border-t border-slate-800/80 text-center text-xs text-slate-500 space-y-3">
         <p className="font-bold text-slate-300 text-sm">منظومة مَسار — الهيئة العامة للتأمين الصحي الشامل (فرع محافظة الأقصر)</p>
-        <p className="text-xs text-slate-400">إدارة المنافذ • منظومة التحويل الطبي الذكي المباشر</p>
+        <p className="text-xs text-slate-400">إدارة المنافذ • منظومة التحويل الطبي الذكي</p>
         
         <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full bg-slate-900/90 border border-brand-500/40 shadow-lg shadow-brand-950/50">
           <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse"></span>
