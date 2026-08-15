@@ -1,8 +1,8 @@
 import { Outlet, useLocation, Navigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Bell, Shield } from 'lucide-react';
-import { mockReferrals } from '../../data/mockData';
 import { useAuth } from '../../context/AuthContext';
+import { useReferrals } from '../../context/ReferralsContext';
 
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
   '/': { title: 'لوحة القيادة', subtitle: 'مؤشرات أداء التحويلات الطبية — فرع الأقصر' },
@@ -14,8 +14,9 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
 export function Layout() {
   const location = useLocation();
   const { user } = useAuth();
+  const { referrals } = useReferrals();
   const pageInfo = pageTitles[location.pathname] || { title: 'مسار', subtitle: 'منظومة التحويلات الطبية' };
-  const pendingCount = mockReferrals.filter(r => r.status === 'PENDING_REVIEW').length;
+  const pendingCount = referrals.filter(r => r.status === 'PENDING_REVIEW').length;
 
   if (!user) {
     return <Navigate to="/login" replace />;

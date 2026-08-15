@@ -7,6 +7,7 @@ import {
 import { mockHospitals, mockUnits, SPECIALTIES } from '../data/mockData';
 import { parseNationalId, formatBirthDate } from '../utils/nationalId';
 import { useAuth } from '../context/AuthContext';
+import { useReferrals } from '../context/ReferralsContext';
 
 interface FormData {
   nationalId: string;
@@ -37,6 +38,7 @@ type Step = 1 | 2 | 3;
 export function NewReferral() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { addReferral } = useReferrals();
   const [form, setForm] = useState<FormData>({
     ...INITIAL_FORM,
     sourceUnitId: user?.unitId || '',
@@ -117,8 +119,23 @@ export function NewReferral() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    addReferral({
+      nationalId: form.nationalId,
+      patientName: form.patientName,
+      patientAge: parseInt(form.patientAge, 10) || 0,
+      gender: (form.gender === 'female' ? 'female' : 'male'),
+      phone: form.phone || '',
+      sourceUnitId: form.sourceUnitId,
+      targetHospitalId: form.targetHospitalId || 'HOSP_CLEO',
+      referringDoctor: form.referringDoctor || 'طبيب الوحدة',
+      specialty: form.specialty,
+      urgency: (form.urgency as 'routine' | 'urgent' | 'emergency') || 'routine',
+      clinicalSummary: form.clinicalSummary,
+      status: 'PENDING_REVIEW',
+      createdBy: user?.id || 'u_admin',
+    });
     setSubmitted(true);
-    setTimeout(() => navigate('/referrals'), 2500);
+    setTimeout(() => navigate('/referrals'), 2000);
   }
 
   const step1Valid = form.nationalId.length === 14 && idStatus === 'valid' && !!form.patientName && !!form.sourceUnitId;

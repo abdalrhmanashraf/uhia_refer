@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, FilePlus2, Eye, ChevronDown } from 'lucide-react';
-import { mockReferrals, getStatusConfig, getUrgencyConfig, getHospital } from '../data/mockData';
+import { Search, FilePlus2, Eye, ChevronDown, FolderOpen, Trash2 } from 'lucide-react';
+import { getStatusConfig, getUrgencyConfig, getHospital, getUnit } from '../data/mockData';
 import { ReferralStatus } from '../types';
+import { useReferrals } from '../context/ReferralsContext';
 
 const STATUS_OPTIONS: { value: ReferralStatus | 'ALL'; label: string }[] = [
   { value: 'ALL', label: 'جميع الحالات' },
@@ -15,11 +16,12 @@ const STATUS_OPTIONS: { value: ReferralStatus | 'ALL'; label: string }[] = [
 ];
 
 export function ReferralsList() {
+  const { referrals, deleteReferral } = useReferrals();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<ReferralStatus | 'ALL'>('ALL');
   const [urgencyFilter, setUrgencyFilter] = useState<string>('ALL');
 
-  const filtered = mockReferrals.filter(r => {
+  const filtered = referrals.filter(r => {
     const matchSearch = !search ||
       r.patientName.includes(search) ||
       r.nationalId.includes(search) ||
@@ -31,7 +33,7 @@ export function ReferralsList() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Toolbar */}
       <div className="glass-card p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="flex flex-col sm:flex-row gap-3 flex-1 w-full">
@@ -42,7 +44,7 @@ export function ReferralsList() {
               placeholder="ابحث بالاسم أو الرقم القومي أو رقم الطلب..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="form-input pl-10 pr-4 py-2.5"
+              className="form-input pl-10 pr-4 py-2.5 text-sm"
             />
             <Search className="w-4 h-4 text-slate-500 absolute left-3 top-3.5" />
           </div>
@@ -52,7 +54,7 @@ export function ReferralsList() {
             <select
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value as ReferralStatus | 'ALL')}
-              className="form-select py-2.5 pl-8 appearance-none cursor-pointer min-w-[160px]"
+              className="form-select py-2.5 pl-8 text-sm appearance-none cursor-pointer min-w-[160px]"
             >
               {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
@@ -64,7 +66,7 @@ export function ReferralsList() {
             <select
               value={urgencyFilter}
               onChange={e => setUrgencyFilter(e.target.value)}
-              className="form-select py-2.5 pl-8 appearance-none cursor-pointer min-w-[140px]"
+              className="form-select py-2.5 pl-8 text-sm appearance-none cursor-pointer min-w-[140px]"
             >
               <option value="ALL">كل الأولويات</option>
               <option value="routine">اعتيادي</option>
@@ -90,82 +92,107 @@ export function ReferralsList() {
                 <th className="px-5 py-4 font-semibold text-right">رقم الطلب</th>
                 <th className="px-5 py-4 font-semibold text-right">المنتفع</th>
                 <th className="px-5 py-4 font-semibold text-right hidden md:table-cell">التخصص</th>
-                <th className="px-5 py-4 font-semibold text-right hidden lg:table-cell">الجهة المحول إليها</th>
+                <th className="px-5 py-4 font-semibold text-right hidden lg:table-cell">المنفذ المحول</th>
+                <th className="px-5 py-4 font-semibold text-right hidden lg:table-cell">المستشفى المتعاقد</th>
                 <th className="px-5 py-4 font-semibold text-right">الأولوية</th>
                 <th className="px-5 py-4 font-semibold text-right">الحالة</th>
                 <th className="px-5 py-4 font-semibold text-right hidden md:table-cell">التاريخ</th>
-                <th className="px-5 py-4 font-semibold text-right">إجراء</th>
+                <th className="px-5 py-4 font-semibold text-center">إجراءات</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-5 py-16 text-center">
-                    <div className="flex flex-col items-center gap-3 text-slate-600">
-                      <Search className="w-10 h-10" />
-                      <p className="font-semibold">لا توجد نتائج مطابقة</p>
-                      <p className="text-xs">جرّب تعديل معايير البحث أو الفلتر</p>
+                  <td colSpan={9} className="px-5 py-16 text-center">
+                    <div className="flex flex-col items-center gap-3 text-slate-500 max-w-sm mx-auto">
+                      <FolderOpen className="w-12 h-12 text-slate-600" />
+                      <p className="font-bold text-slate-300 text-base">لا توجد تحويلات مسجلة</p>
+                      <p className="text-xs text-slate-500">
+                        القائمة فارغة وجاهزة لاستقبال طلبات التحويل الجديدة للمستشفيات الـ 5 المتعاقدة.
+                      </p>
+                      <Link to="/new-referral" className="btn-primary mt-2">
+                        <FilePlus2 className="w-4 h-4" />
+                        إنشاء طلب تحويل جديد
+                      </Link>
                     </div>
                   </td>
                 </tr>
-              ) : filtered.map((ref) => {
-                const statusCfg = getStatusConfig(ref.status);
-                const urgencyCfg = getUrgencyConfig(ref.urgency);
-                const hospital = getHospital(ref.targetHospitalId);
-                return (
-                  <tr key={ref.id} className="table-row">
-                    <td className="px-5 py-4">
-                      <span className="font-mono text-xs text-brand-400 font-bold">{ref.id}</span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <p className="font-bold text-slate-200">{ref.patientName}</p>
-                      <p className="text-xs text-slate-500 font-mono">{ref.nationalId}</p>
-                    </td>
-                    <td className="px-5 py-4 hidden md:table-cell">
-                      <span className="text-slate-300 text-xs">{ref.specialty}</span>
-                    </td>
-                    <td className="px-5 py-4 hidden lg:table-cell">
-                      <span className="text-slate-400 text-xs">{hospital?.name || '—'}</span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={`text-xs font-bold ${urgencyCfg.color}`}>{urgencyCfg.label}</span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={`badge ${statusCfg.color}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${statusCfg.dot}`} />
-                        {statusCfg.label}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 hidden md:table-cell">
-                      <span className="text-xs text-slate-500">
-                        {new Date(ref.createdAt).toLocaleDateString('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <button className="p-2 text-slate-500 hover:text-brand-400 hover:bg-brand-900/20 rounded-lg transition-all duration-150">
-                        <Eye className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+              ) : (
+                filtered.map((ref) => {
+                  const statusCfg = getStatusConfig(ref.status);
+                  const urgencyCfg = getUrgencyConfig(ref.urgency);
+                  const hospital = getHospital(ref.targetHospitalId);
+                  const unit = getUnit(ref.sourceUnitId);
+
+                  return (
+                    <tr key={ref.id} className="table-row">
+                      <td className="px-5 py-4">
+                        <span className="font-mono text-xs text-brand-400 font-bold">{ref.id}</span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <p className="font-bold text-slate-200">{ref.patientName}</p>
+                        <p className="text-xs text-slate-500 font-mono">{ref.nationalId}</p>
+                      </td>
+                      <td className="px-5 py-4 hidden md:table-cell">
+                        <span className="text-slate-300 text-xs">{ref.specialty}</span>
+                      </td>
+                      <td className="px-5 py-4 hidden lg:table-cell">
+                        <span className="text-slate-400 text-xs">{unit?.name || '—'}</span>
+                      </td>
+                      <td className="px-5 py-4 hidden lg:table-cell">
+                        <span className="text-slate-300 text-xs font-semibold">{hospital?.name || 'يحدده المشرف'}</span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className={`text-xs font-bold ${urgencyCfg.color}`}>{urgencyCfg.label}</span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className={`badge ${statusCfg.color}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${statusCfg.dot}`} />
+                          {statusCfg.label}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 hidden md:table-cell">
+                        <span className="text-xs text-slate-500">
+                          {new Date(ref.createdAt).toLocaleDateString('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            title="عرض التفاصيل"
+                            className="p-1.5 text-slate-500 hover:text-brand-400 hover:bg-brand-900/20 rounded-lg transition-all"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`هل أنت متأكد من حذف الطلب ${ref.id}؟`)) {
+                                deleteReferral(ref.id);
+                              }
+                            }}
+                            title="حذف الطلب"
+                            className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-all"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-800/60 bg-slate-900/40 flex items-center justify-between">
-          <span className="text-xs text-slate-500 font-semibold">
-            عرض <span className="text-slate-300">{filtered.length}</span> من أصل <span className="text-slate-300">{mockReferrals.length}</span> طلب
-          </span>
-          <div className="flex items-center gap-1">
-            {[1].map(p => (
-              <button key={p} className="w-8 h-8 rounded-lg bg-brand-600/20 border border-brand-600/40 text-brand-400 text-xs font-bold">
-                {p}
-              </button>
-            ))}
+        {filtered.length > 0 && (
+          <div className="px-6 py-4 border-t border-slate-800/60 bg-slate-900/40 flex items-center justify-between">
+            <span className="text-xs text-slate-500 font-semibold">
+              عرض <span className="text-slate-300">{filtered.length}</span> من أصل <span className="text-slate-300">{referrals.length}</span> طلب
+            </span>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
