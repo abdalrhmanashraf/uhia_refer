@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Filter, FilePlus2, Eye, ChevronDown } from 'lucide-react';
-import { mockReferrals, getStatusConfig, getUrgencyConfig, getUnit, getHospital } from '../data/mockData';
+import { Search, FilePlus2, Eye, ChevronDown } from 'lucide-react';
+import { mockReferrals, getStatusConfig, getUrgencyConfig, getHospital } from '../data/mockData';
 import { ReferralStatus } from '../types';
 
 const STATUS_OPTIONS: { value: ReferralStatus | 'ALL'; label: string }[] = [

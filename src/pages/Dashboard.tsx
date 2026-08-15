@@ -1,10 +1,9 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import {
   FileText, Clock, CheckCircle2, XCircle, AlertTriangle,
   TrendingUp, ArrowLeft, Zap, Hospital
 } from 'lucide-react';
-import { mockReferrals, getStatusConfig, getUrgencyConfig, getUnit, getHospital } from '../data/mockData';
+import { mockReferrals, getStatusConfig, getUrgencyConfig, getUnit } from '../data/mockData';
 
 function StatCard({ label, value, icon: Icon, color, sub }: {
   label: string; value: number | string; icon: React.ElementType;
