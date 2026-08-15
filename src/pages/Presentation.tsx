@@ -360,9 +360,22 @@ export function Presentation() {
         <div className="glass-card p-5 rounded-2xl border-slate-800 space-y-1">
           <p className="text-2xl sm:text-3xl font-black text-blue-400 font-mono">Real-time</p>
           <h4 className="text-xs font-bold text-slate-200">مزامنة سحابية متعددة الأجهزة</h4>
-          <p className="text-[10px] text-slate-500">متابعة حية من الموبايل والكمبيوتر لجميع الأطراف</p>
+          <p className="text-[10px] text-slate-500">تحديث حي لحظي للجميع</p>
         </div>
       </div>
+
+      {/* ── Footer ──────────────────────────────────────────────────────── */}
+      <footer className="pt-8 border-t border-slate-800/80 text-center text-xs text-slate-500 space-y-3">
+        <p className="font-bold text-slate-300 text-sm">منظومة مَسار — الهيئة العامة للتأمين الصحي الشامل (فرع محافظة الأقصر)</p>
+        <p className="text-xs text-slate-400">إدارة المنافذ • منظومة التحويل الطبي الذكي المباشر</p>
+        
+        <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full bg-slate-900/90 border border-brand-500/40 shadow-lg shadow-brand-950/50">
+          <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse"></span>
+          <span className="font-mono text-xs font-bold text-slate-300">
+            Designed &amp; Developed by <strong className="text-brand-400 font-extrabold">Abdalrhman Ashraf</strong> • 2026
+          </span>
+        </div>
+      </footer>
     </div>
   );
 }
