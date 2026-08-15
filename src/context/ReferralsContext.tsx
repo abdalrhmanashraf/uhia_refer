@@ -4,6 +4,7 @@ import { Referral, ReferralStatus } from '../types';
 interface ReferralsContextType {
   referrals: Referral[];
   addReferral: (data: Omit<Referral, 'id' | 'createdAt' | 'lastModifiedAt'>) => Referral;
+  updateReferral: (id: string, updatedData: Partial<Referral>) => void;
   updateReferralStatus: (id: string, newStatus: ReferralStatus, comment?: string) => void;
   deleteReferral: (id: string) => void;
   clearAllReferrals: () => void;
@@ -23,7 +24,6 @@ export const ReferralsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         console.error('Failed to parse referrals list', e);
       }
     }
-    // تبدأ فارغة تماماً بناءً على طلبك
     return [];
   });
 
@@ -48,19 +48,25 @@ export const ReferralsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return newReferral;
   };
 
-  const updateReferralStatus = (id: string, newStatus: ReferralStatus, comment?: string) => {
+  const updateReferral = (id: string, updatedData: Partial<Referral>) => {
     setReferrals(prev =>
       prev.map(r =>
         r.id === id
           ? {
               ...r,
-              status: newStatus,
-              rejectionComment: comment || r.rejectionComment,
+              ...updatedData,
               lastModifiedAt: new Date().toISOString(),
             }
           : r
       )
     );
+  };
+
+  const updateReferralStatus = (id: string, newStatus: ReferralStatus, comment?: string) => {
+    updateReferral(id, {
+      status: newStatus,
+      rejectionComment: comment,
+    });
   };
 
   const deleteReferral = (id: string) => {
@@ -77,6 +83,7 @@ export const ReferralsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       value={{
         referrals,
         addReferral,
+        updateReferral,
         updateReferralStatus,
         deleteReferral,
         clearAllReferrals,
