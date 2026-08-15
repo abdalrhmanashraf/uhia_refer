@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom';
 import {
   Search, FilePlus2, Eye, ChevronDown, FolderOpen, Trash2,
   CheckCircle2, XCircle,
-  Hospital as HospitalIcon, User, Stethoscope, FileText,
-  Shield, Edit3, Send
+  Hospital as HospitalIcon, FileText,
+  Shield, Edit3, Send, Save, Printer
 } from 'lucide-react';
-import { getStatusConfig, getUrgencyConfig, getHospital, getUnit, mockHospitals } from '../data/mockData';
+import { getStatusConfig, getUrgencyConfig, getHospital, getUnit, mockHospitals, mockUnits, SPECIALTIES } from '../data/mockData';
 import { Referral, ReferralStatus } from '../types';
 import { useReferrals } from '../context/ReferralsContext';
 import { useAuth } from '../context/AuthContext';
@@ -31,44 +31,101 @@ export function ReferralsList() {
 
   // Modal State
   const [selectedReferral, setSelectedReferral] = useState<Referral | null>(null);
-  const [reviewHospitalId, setReviewHospitalId] = useState<string>('');
-  const [reviewNotes, setReviewNotes] = useState<string>('');
-  const [rejectionReasonId, setRejectionReasonId] = useState<string>('r1');
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string>('');
+
+  // Form edit fields (للتعديل الكامل على الجواب بواسطة مدير المنافذ / الأدمن)
+  const [editForm, setEditForm] = useState({
+    patientName: '',
+    nationalId: '',
+    patientAge: 0,
+    gender: 'male' as 'male' | 'female',
+    phone: '',
+    sourceUnitId: '',
+    specialty: '',
+    targetHospitalId: '',
+    referringDoctor: '',
+    urgency: 'routine' as 'routine' | 'urgent' | 'emergency',
+    clinicalSummary: '',
+    reviewNotes: '',
+  });
 
   const isReviewer = user?.role === 'DIRECTORATE_REVIEWER' || user?.role === 'SYSTEM_ADMIN';
   const isHospitalReceiver = user?.role === 'HOSPITAL_RECEIVER';
 
   const openDetailsModal = (ref: Referral) => {
     setSelectedReferral(ref);
-    setReviewHospitalId(ref.targetHospitalId || 'HOSP_CLEO');
-    setReviewNotes(ref.rejectionComment || '');
-    setRejectionReasonId(ref.rejectionReasonId || 'r1');
+    setShowPrintPreview(false);
+    setEditForm({
+      patientName: ref.patientName,
+      nationalId: ref.nationalId,
+      patientAge: ref.patientAge,
+      gender: ref.gender,
+      phone: ref.phone || '',
+      sourceUnitId: ref.sourceUnitId,
+      specialty: ref.specialty,
+      targetHospitalId: ref.targetHospitalId || 'HOSP_CLEO',
+      referringDoctor: ref.referringDoctor || '',
+      urgency: ref.urgency,
+      clinicalSummary: ref.clinicalSummary,
+      reviewNotes: ref.rejectionComment || '',
+    });
     setActionSuccess('');
   };
 
   const closeModal = () => {
     setSelectedReferral(null);
+    setShowPrintPreview(false);
     setActionSuccess('');
   };
 
-  // إرسال الإجراء وتحديث الحالة
+  // حفظ التعديلات وإرسال الجواب للمستشفى
+  const handleSaveAndSendToHospital = (sendImmediately = true) => {
+    if (!selectedReferral) return;
+
+    const newStatus: ReferralStatus = sendImmediately ? 'PENDING_HOSPITAL' : selectedReferral.status;
+
+    updateReferral(selectedReferral.id, {
+      patientName: editForm.patientName,
+      nationalId: editForm.nationalId,
+      patientAge: editForm.patientAge,
+      gender: editForm.gender,
+      phone: editForm.phone,
+      sourceUnitId: editForm.sourceUnitId,
+      specialty: editForm.specialty,
+      targetHospitalId: editForm.targetHospitalId,
+      referringDoctor: editForm.referringDoctor,
+      urgency: editForm.urgency,
+      clinicalSummary: editForm.clinicalSummary,
+      rejectionComment: editForm.reviewNotes,
+      status: newStatus,
+    });
+
+    const targetHospName = mockHospitals.find(h => h.id === editForm.targetHospitalId)?.name || 'المستشفى المتعاقد';
+
+    if (sendImmediately) {
+      setActionSuccess(`تم حفظ التعديلات وإرسال الجواب بنجاح إلى: ${targetHospName} 🚀`);
+    } else {
+      setActionSuccess(`تم حفظ التعديلات على الجواب بنجاح ✓`);
+    }
+
+    setTimeout(() => {
+      closeModal();
+    }, 1600);
+  };
+
+  // قرارات المراجعة الإضافية
   const handleReviewAction = (newStatus: ReferralStatus, commentText?: string) => {
     if (!selectedReferral) return;
 
     updateReferral(selectedReferral.id, {
       status: newStatus,
-      targetHospitalId: reviewHospitalId || selectedReferral.targetHospitalId,
-      rejectionComment: commentText || reviewNotes,
-      rejectionReasonId: newStatus === 'REJECTED' ? rejectionReasonId : undefined,
+      targetHospitalId: editForm.targetHospitalId || selectedReferral.targetHospitalId,
+      rejectionComment: commentText || editForm.reviewNotes,
     });
 
-    const targetHospName = mockHospitals.find(h => h.id === reviewHospitalId)?.name || 'المستشفى المتعاقد';
-
-    if (newStatus === 'PENDING_HOSPITAL') {
-      setActionSuccess(`تم اعتماد الطلب وتوجيهه بنجاح إلى: ${targetHospName}`);
-    } else if (newStatus === 'ACCEPTED') {
-      setActionSuccess(`تم قبول الحالة وتأكيد استقبالها بالمستشفى المتعاقد ✓`);
+    if (newStatus === 'ACCEPTED') {
+      setActionSuccess(`تم قبول الحالة وتأكيد الاستقبال بالمستشفى المتعاقد ✓`);
     } else if (newStatus === 'RETURNED_TO_UNIT') {
       setActionSuccess(`تم إعادة الطلب للوحدة المصدرة لاستيفاء البيانات`);
     } else if (newStatus === 'REJECTED') {
@@ -167,7 +224,7 @@ export function ReferralsList() {
                       <FolderOpen className="w-12 h-12 text-slate-600" />
                       <p className="font-bold text-slate-300 text-base">لا توجد تحويلات مسجلة</p>
                       <p className="text-xs text-slate-500">
-                        القائمة فارغة وجاهزة لاستقبال طلبات التحويل الجديدة للمستشفيات الـ 5 المتعاقدة.
+                        القائمة فارغة وجاهزة لاستقبال وتعديل طلبات التحويل للمستشفيات الـ 5 المتعاقدة.
                       </p>
                       <Link to="/new-referral" className="btn-primary mt-2">
                         <FilePlus2 className="w-4 h-4" />
@@ -225,20 +282,21 @@ export function ReferralsList() {
                       </td>
                       <td className="px-5 py-4 text-center" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-1.5">
-                          {/* زر المراجعة والاعتماد المباشر لمدير المنافذ */}
-                          {isReviewer && ref.status === 'PENDING_REVIEW' && (
+                          {/* زر تعديل وإرسال الجواب لمدير المنافذ أو مسؤول النظام */}
+                          {isReviewer && (
                             <button
                               onClick={() => openDetailsModal(ref)}
+                              title="تعديل الجواب وإرساله للمستشفى"
                               className="px-2.5 py-1 rounded-lg bg-brand-900/60 hover:bg-brand-800/80 border border-brand-600/60 text-brand-300 text-xs font-bold flex items-center gap-1 transition-all"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
-                              مراجعة وتوجيه
+                              تعديل وإرسال
                             </button>
                           )}
 
                           <button
                             onClick={() => openDetailsModal(ref)}
-                            title="عرض التفاصيل والمراجعة"
+                            title="عرض الجواب والتفاصيل"
                             className="p-1.5 text-slate-400 hover:text-brand-400 hover:bg-slate-800 rounded-lg transition-all"
                           >
                             <Eye className="w-4 h-4" />
@@ -275,30 +333,47 @@ export function ReferralsList() {
         )}
       </div>
 
-      {/* ── Modal: تفاصيل ومراجعة واعتماد الطلب ──────────────────────────── */}
+      {/* ── Modal: تعديل الجواب ومراجعته وإرساله للمستشفى ─────────────────── */}
       {selectedReferral && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="glass-card w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 border-slate-700 shadow-2xl space-y-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className="glass-card w-full max-w-3xl max-h-[92vh] overflow-y-auto p-6 sm:p-7 border-slate-700 shadow-2xl space-y-6">
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-800/80">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-sm font-black text-brand-400">{selectedReferral.id}</span>
-                  <span className={`badge ${getStatusConfig(selectedReferral.status).color}`}>
-                    {getStatusConfig(selectedReferral.status).label}
-                  </span>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-brand-900/40 border border-brand-700/40 flex items-center justify-center text-brand-400">
+                  <FileText className="w-5 h-5" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-100 mt-1">
-                  تفاصيل طلب التحويل — {selectedReferral.patientName}
-                </h3>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-sm font-black text-brand-400">{selectedReferral.id}</span>
+                    <span className={`badge ${getStatusConfig(selectedReferral.status).color}`}>
+                      {getStatusConfig(selectedReferral.status).label}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-100 mt-0.5">
+                    {isReviewer ? 'تعديل جواب التحويل وتوجيهه للمستشفى المتعاقد' : 'تفاصيل جواب التحويل الطبي'}
+                  </h3>
+                </div>
               </div>
 
-              <button
-                onClick={closeModal}
-                className="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors"
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPrintPreview(!showPrintPreview)}
+                  className="p-2 text-slate-400 hover:text-brand-300 hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-1 text-xs font-semibold"
+                  title="معاينة وطباعة الجواب الرسمي"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span className="hidden sm:inline">معاينة الجواب</span>
+                </button>
+
+                <button
+                  onClick={closeModal}
+                  className="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             {actionSuccess && (
@@ -308,158 +383,331 @@ export function ReferralsList() {
               </div>
             )}
 
-            {/* Case Details Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div className="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800/80 space-y-2">
-                <p className="font-bold text-slate-400 text-[11px] uppercase tracking-wider flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-brand-400" /> بيانات المنتفع
-                </p>
-                <div className="space-y-1">
-                  <p className="text-slate-200"><strong className="text-slate-400 font-medium">الاسم:</strong> {selectedReferral.patientName}</p>
-                  <p className="text-slate-200 font-mono"><strong className="text-slate-400 font-medium">الرقم القومي:</strong> {selectedReferral.nationalId}</p>
-                  <p className="text-slate-200"><strong className="text-slate-400 font-medium">السن / النوع:</strong> {selectedReferral.patientAge} سنة • {selectedReferral.gender === 'male' ? 'ذكر' : 'أنثى'}</p>
-                  <p className="text-slate-200"><strong className="text-slate-400 font-medium">الهاتف:</strong> {selectedReferral.phone || 'غير مسجل'}</p>
+            {/* ── وضع المعاينة والطباعة للجواب الرسمي ─────────────────────── */}
+            {showPrintPreview ? (
+              <div className="p-6 bg-white text-slate-900 rounded-2xl space-y-6 shadow-xl print:m-0 border border-slate-300 animate-fade-in font-sans">
+                {/* Header Letterhead */}
+                <div className="flex items-center justify-between border-b-2 border-slate-800 pb-4">
+                  <div className="text-right">
+                    <p className="text-xs font-bold text-slate-600">جمهورية مصر العربية</p>
+                    <p className="text-xs font-bold text-slate-600">الهيئة العامة للتأمين الصحي الشامل</p>
+                    <p className="text-sm font-black text-emerald-800">فرع محافظة الأقصر — إدارة المنافذ</p>
+                  </div>
+                  <div className="text-center">
+                    <h2 className="text-lg font-black text-slate-900 border-2 border-slate-900 px-4 py-1 rounded-lg">
+                      خطاب إحالة طبية متعاقدة
+                    </h2>
+                    <p className="text-xs font-mono font-bold text-slate-700 mt-1">{selectedReferral.id}</p>
+                  </div>
+                  <div className="text-left text-xs font-bold text-slate-600">
+                    <p>التاريخ: {new Date(selectedReferral.createdAt).toLocaleDateString('ar-EG')}</p>
+                    <p>درجة الإلحاح: <strong className="text-red-700">{getUrgencyConfig(editForm.urgency).label}</strong></p>
+                  </div>
+                </div>
+
+                {/* Receiver Hospital */}
+                <div className="bg-slate-100 p-3 rounded-lg border border-slate-300">
+                  <p className="text-sm font-bold text-slate-800">
+                    السادة إدارة / <strong className="text-emerald-900 text-base">{mockHospitals.find(h => h.id === editForm.targetHospitalId)?.name || 'المستشفى المتعاقد'}</strong> الموقرين
+                  </p>
+                  <p className="text-xs text-slate-600 mt-1">
+                    تحية طيبة وبعد،،، يرجى التكرم باستقبال ومناظرة الحالة الموضحة بياناتها أدناه وفقاً لبروتوكول التعاقد المعتمد:
+                  </p>
+                </div>
+
+                {/* Patient Information Table */}
+                <table className="w-full text-xs border border-slate-300">
+                  <tbody>
+                    <tr className="border-b border-slate-300 bg-slate-50">
+                      <td className="p-2 font-bold w-1/4 border-l border-slate-300">اسم المنتفع:</td>
+                      <td className="p-2 font-black text-sm text-slate-900 border-l border-slate-300">{editForm.patientName}</td>
+                      <td className="p-2 font-bold w-1/6 border-l border-slate-300">الرقم القومي:</td>
+                      <td className="p-2 font-mono font-bold text-sm text-slate-900">{editForm.nationalId}</td>
+                    </tr>
+                    <tr className="border-b border-slate-300">
+                      <td className="p-2 font-bold border-l border-slate-300">السن / النوع:</td>
+                      <td className="p-2 border-l border-slate-300">{editForm.patientAge} سنة • {editForm.gender === 'male' ? 'ذكر' : 'أنثى'}</td>
+                      <td className="p-2 font-bold border-l border-slate-300">رقم الهاتف:</td>
+                      <td className="p-2 font-mono">{editForm.phone || 'غير مسجل'}</td>
+                    </tr>
+                    <tr className="border-b border-slate-300 bg-slate-50">
+                      <td className="p-2 font-bold border-l border-slate-300">المنفذ المحول:</td>
+                      <td className="p-2 font-semibold border-l border-slate-300">{getUnit(editForm.sourceUnitId)?.name || 'وحدة طب أسرة'}</td>
+                      <td className="p-2 font-bold border-l border-slate-300">التخصص المطلوب:</td>
+                      <td className="p-2 font-black text-emerald-900 text-sm">{editForm.specialty}</td>
+                    </tr>
+                    <tr>
+                      <td className="p-2 font-bold border-l border-slate-300">الطبيب المحول:</td>
+                      <td colSpan={3} className="p-2 font-semibold">{editForm.referringDoctor || 'طبيب الوحدة'}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                {/* Clinical Summary */}
+                <div className="border border-slate-300 rounded-lg p-3">
+                  <p className="text-xs font-bold text-slate-800 mb-1">الملخص السريري والتشخيص الطبي (سبب الإحالة):</p>
+                  <p className="text-xs text-slate-800 leading-relaxed font-sans min-h-[50px]">
+                    {editForm.clinicalSummary || 'لا يوجد ملخص'}
+                  </p>
+                </div>
+
+                {/* Reviewer Instructions */}
+                {editForm.reviewNotes && (
+                  <div className="bg-emerald-50 border border-emerald-300 rounded-lg p-3">
+                    <p className="text-xs font-bold text-emerald-900 mb-1">توجيهات واعتماد إدارة المنافذ بالأقصر:</p>
+                    <p className="text-xs text-emerald-800 font-sans">{editForm.reviewNotes}</p>
+                  </div>
+                )}
+
+                {/* Signatures */}
+                <div className="pt-6 grid grid-cols-2 text-center text-xs font-bold text-slate-700">
+                  <div>
+                    <p>أخصائي المنفذ المحول</p>
+                    <p className="mt-8 text-slate-500">التوقيع والختم: ............................</p>
+                  </div>
+                  <div>
+                    <p>مدير إدارة المنافذ — فرع الأقصر</p>
+                    <p className="text-emerald-900 font-bold mt-1">أحمد أمين</p>
+                    <p className="mt-5 text-slate-500">الاعتماد: [ معتمد إلكترونياً بموجب المنظومة ]</p>
+                  </div>
                 </div>
               </div>
-
-              <div className="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800/80 space-y-2">
-                <p className="font-bold text-slate-400 text-[11px] uppercase tracking-wider flex items-center gap-1.5">
-                  <Stethoscope className="w-3.5 h-3.5 text-blue-400" /> بيانات الإحالة الطبية
-                </p>
-                <div className="space-y-1">
-                  <p className="text-slate-200"><strong className="text-slate-400 font-medium">التخصص:</strong> {selectedReferral.specialty}</p>
-                  <p className="text-slate-200"><strong className="text-slate-400 font-medium">المنفذ المحول:</strong> {getUnit(selectedReferral.sourceUnitId)?.name || 'غير محدد'}</p>
-                  <p className="text-slate-200"><strong className="text-slate-400 font-medium">الطبيب:</strong> {selectedReferral.referringDoctor}</p>
-                  <p className="text-slate-200"><strong className="text-slate-400 font-medium">درجة الإلحاح:</strong> {getUrgencyConfig(selectedReferral.urgency).label}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Clinical Summary */}
-            <div className="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800/80">
-              <p className="font-bold text-slate-400 text-[11px] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-amber-400" /> الملخص السريري والتشخيص
-              </p>
-              <p className="text-slate-200 text-xs leading-relaxed bg-slate-950/60 p-3 rounded-lg border border-slate-800/60 font-sans">
-                {selectedReferral.clinicalSummary || 'لا يوجد ملخص سريري'}
-              </p>
-            </div>
-
-            {/* ── لوحة قرارات مدير إدارة المنافذ (أحمد أمين / الأدمن) ─────── */}
-            {isReviewer && (
-              <div className="p-5 rounded-2xl bg-gradient-to-br from-brand-950/40 via-slate-900 to-slate-900 border border-brand-700/50 space-y-4">
-                <div className="flex items-center justify-between border-b border-brand-800/40 pb-2.5">
-                  <div className="flex items-center gap-2">
+            ) : (
+              /* ── وضع التعديل الكامل للجواب (متاح لمسؤول النظام ومدير المنافذ) ── */
+              <div className="space-y-5">
+                {/* تنبيه بالصلاحية */}
+                <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs">
+                  <div className="flex items-center gap-2 text-slate-300">
                     <Shield className="w-4 h-4 text-brand-400" />
-                    <h4 className="font-bold text-slate-100 text-sm">قرارات مراجعة إدارة المنافذ</h4>
+                    <span>
+                      صلاحية تعديل الجواب الطبي متاحة لـ: <strong className="text-brand-300">مسؤول النظام (عبد الرحمن أشرف)</strong> و <strong className="text-amber-300">مدير إدارة المنافذ (أحمد أمين)</strong>
+                    </span>
                   </div>
-                  <span className="text-[11px] font-semibold text-brand-300">أحمد أمين — مدير المنافذ</span>
+                  <span className="text-[11px] font-mono text-slate-500">جاهز للتعديل والإرسال</span>
                 </div>
 
-                {/* اختيار وتعديل المستشفى المتعاقد */}
-                <div>
-                  <label className="form-label text-xs">
-                    توجيه الحالة إلى المستشفى المتعاقد <span className="text-red-400">*</span>
-                  </label>
-                  <select
-                    value={reviewHospitalId}
-                    onChange={e => setReviewHospitalId(e.target.value)}
-                    className="form-select font-bold text-sm bg-slate-950/80 border-brand-600/50 text-slate-100"
-                  >
-                    {mockHospitals.map(h => (
-                      <option key={h.id} value={h.id}>
-                        {h.name} — ({h.specialties.slice(0, 3).join('، ')}...)
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* ملاحظات المراجعة */}
-                <div>
-                  <label className="form-label text-xs">ملاحظات أو تعليمات المراجعة (اختياري)</label>
-                  <input
-                    type="text"
-                    placeholder="مثال: تم التنسيق مع المستشفى لاستقبال الحالة غداً..."
-                    value={reviewNotes}
-                    onChange={e => setReviewNotes(e.target.value)}
-                    className="form-input text-xs"
-                  />
-                </div>
-
-                {/* أزرار الإجراءات لمدير المنافذ */}
-                <div className="flex flex-wrap items-center gap-2.5 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => handleReviewAction('PENDING_HOSPITAL')}
-                    className="btn-primary py-2.5 px-4 text-xs font-bold bg-brand-600 hover:bg-brand-500 shadow-lg shadow-brand-900/40"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    اعتماد وتوجيه للمستشفى المتعاقد
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleReviewAction('RETURNED_TO_UNIT', 'يرجى استيفاء المرفقات والتقرير الطبي')}
-                    className="py-2.5 px-3.5 rounded-xl bg-amber-950/60 hover:bg-amber-900/60 border border-amber-700/60 text-amber-300 text-xs font-bold transition-all"
-                  >
-                    ↩️ إعادة للوحدة للاستيفاء
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const reason = prompt('سبب الرفض:', 'التحويل لا يتطابق مع شروط التعاقد');
-                      if (reason !== null) {
-                        handleReviewAction('REJECTED', reason);
-                      }
-                    }}
-                    className="py-2.5 px-3.5 rounded-xl bg-red-950/60 hover:bg-red-900/60 border border-red-700/60 text-red-300 text-xs font-bold transition-all"
-                  >
-                    <XCircle className="w-3.5 h-3.5" />
-                    رفض الطلب
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ── لوحة قرارات مسؤول قبول المستشفى ─────────────────────────── */}
-            {isHospitalReceiver && (
-              <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-950/40 via-slate-900 to-slate-900 border border-blue-700/50 space-y-4">
-                <div className="flex items-center justify-between border-b border-blue-800/40 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <HospitalIcon className="w-4 h-4 text-blue-400" />
-                    <h4 className="font-bold text-slate-100 text-sm">قرارات قبول المستشفى المتعاقد</h4>
+                {/* نموذج تعديل بيانات الجواب */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="form-label text-xs">اسم المنتفع</label>
+                    <input
+                      type="text"
+                      value={editForm.patientName}
+                      disabled={!isReviewer}
+                      onChange={e => setEditForm({ ...editForm, patientName: e.target.value })}
+                      className="form-input text-xs"
+                    />
                   </div>
-                  <span className="text-[11px] font-semibold text-blue-300">{getHospital(selectedReferral.targetHospitalId)?.name}</span>
+
+                  <div>
+                    <label className="form-label text-xs">الرقم القومي (14 رقم)</label>
+                    <input
+                      type="text"
+                      maxLength={14}
+                      value={editForm.nationalId}
+                      disabled={!isReviewer}
+                      onChange={e => setEditForm({ ...editForm, nationalId: e.target.value.replace(/\D/g, '') })}
+                      className="form-input text-xs font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="form-label text-xs">رقم الهاتف</label>
+                    <input
+                      type="text"
+                      value={editForm.phone}
+                      disabled={!isReviewer}
+                      onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
+                      className="form-input text-xs font-mono"
+                      placeholder="01xxxxxxxxx"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="form-label text-xs">المنفذ المحول</label>
+                    <select
+                      value={editForm.sourceUnitId}
+                      disabled={!isReviewer}
+                      onChange={e => setEditForm({ ...editForm, sourceUnitId: e.target.value })}
+                      className="form-select text-xs"
+                    >
+                      {mockUnits.map(u => (
+                        <option key={u.id} value={u.id}>
+                          {u.name} ({u.directorate})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="form-label text-xs">التخصص الطبي المطلوب</label>
+                    <select
+                      value={editForm.specialty}
+                      disabled={!isReviewer}
+                      onChange={e => setEditForm({ ...editForm, specialty: e.target.value })}
+                      className="form-select text-xs font-semibold"
+                    >
+                      {SPECIALTIES.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="form-label text-xs">درجة الإلحاح</label>
+                    <select
+                      value={editForm.urgency}
+                      disabled={!isReviewer}
+                      onChange={e => setEditForm({ ...editForm, urgency: e.target.value as any })}
+                      className="form-select text-xs font-semibold"
+                    >
+                      <option value="routine">اعتيادي</option>
+                      <option value="urgent">عاجل</option>
+                      <option value="emergency">🚨 طارئ — أولوية قصوى</option>
+                    </select>
+                  </div>
+
+                  {/* المستشفى المتعاقد الموجه إليه الجواب */}
+                  <div className="sm:col-span-2 p-4 rounded-xl bg-brand-950/40 border border-brand-700/50 space-y-2">
+                    <label className="form-label text-xs font-bold text-brand-300 flex items-center gap-1.5">
+                      <HospitalIcon className="w-4 h-4 text-brand-400" />
+                      المستشفى المتعاقد الموجه إليه الجواب <span className="text-red-400">*</span>
+                    </label>
+                    <select
+                      value={editForm.targetHospitalId}
+                      disabled={!isReviewer}
+                      onChange={e => setEditForm({ ...editForm, targetHospitalId: e.target.value })}
+                      className="form-select font-bold text-sm bg-slate-950 text-slate-100 border-brand-600/50"
+                    >
+                      {mockHospitals.map(h => (
+                        <option key={h.id} value={h.id}>
+                          {h.name} — ({h.location} • {h.specialties.slice(0, 3).join('، ')}...)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* الملخص السريري والتشخيص الطبي */}
+                  <div className="sm:col-span-2">
+                    <label className="form-label text-xs">الملخص السريري والتشخيص الطبي (نص الجواب)</label>
+                    <textarea
+                      rows={3}
+                      disabled={!isReviewer}
+                      value={editForm.clinicalSummary}
+                      onChange={e => setEditForm({ ...editForm, clinicalSummary: e.target.value })}
+                      className="form-input text-xs resize-none"
+                      placeholder="وصف تفصيلي للتشخيص وسبب التحويل للمستشفى المتعاقد..."
+                    />
+                  </div>
+
+                  {/* ملاحظات وتوجيهات إدارة المنافذ */}
+                  {isReviewer && (
+                    <div className="sm:col-span-2">
+                      <label className="form-label text-xs font-bold text-amber-300">
+                        ملاحظات أو توجيهات إدارة المنافذ للمستشفى (اختياري)
+                      </label>
+                      <input
+                        type="text"
+                        value={editForm.reviewNotes}
+                        onChange={e => setEditForm({ ...editForm, reviewNotes: e.target.value })}
+                        className="form-input text-xs"
+                        placeholder="مثال: تم التنسيق مع العيادات الخارجية لاستقبال الحالة صباح الغد..."
+                      />
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => handleReviewAction('ACCEPTED')}
-                    className="btn-primary py-2.5 px-4 text-xs font-bold bg-brand-600 hover:bg-brand-500 shadow-lg shadow-brand-900/40"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    قبول الحالة وتأكيد الاستقبال
-                  </button>
+                {/* أزرار الإجراءات لمدير المنافذ ومسؤول النظام */}
+                {isReviewer && (
+                  <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-wrap items-center justify-between gap-3 pt-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSaveAndSendToHospital(true)}
+                        className="btn-primary py-2.5 px-4 text-xs font-bold bg-brand-600 hover:bg-brand-500 shadow-lg shadow-brand-900/50 flex items-center gap-1.5"
+                      >
+                        <Send className="w-4 h-4" />
+                        حفظ التعديلات وإرسال الجواب للمستشفى
+                      </button>
 
-                  <button
-                    type="button"
-                    onClick={() => handleReviewAction('HOSPITAL_RFI', 'مطلوب إشاعة رنين مغناطيسي حديثة')}
-                    className="py-2.5 px-3.5 rounded-xl bg-purple-950/60 hover:bg-purple-900/60 border border-purple-700/60 text-purple-300 text-xs font-bold transition-all"
-                  >
-                    📝 طلب استيفاء إضافي (RFI)
-                  </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSaveAndSendToHospital(false)}
+                        className="py-2.5 px-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1.5 transition-all"
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        حفظ التعديلات كمسودة
+                      </button>
+                    </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handleReviewAction('REJECTED', 'عدم توفر سرير عناية / طاقة استيعابية')}
-                    className="py-2.5 px-3.5 rounded-xl bg-red-950/60 hover:bg-red-900/60 border border-red-700/60 text-red-300 text-xs font-bold transition-all"
-                  >
-                    <XCircle className="w-3.5 h-3.5" />
-                    اعتذار / رفض الحالة
-                  </button>
-                </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleReviewAction('RETURNED_TO_UNIT', 'يرجى استيفاء المرفقات والتقرير الطبي')}
+                        className="py-2.5 px-3 rounded-xl bg-amber-950/60 hover:bg-amber-900/60 border border-amber-700/60 text-amber-300 text-xs font-bold transition-all"
+                      >
+                        ↩️ إعادة للوحدة
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const reason = prompt('سبب الرفض:', 'التحويل لا يتطابق مع شروط التعاقد');
+                          if (reason !== null) {
+                            handleReviewAction('REJECTED', reason);
+                          }
+                        }}
+                        className="py-2.5 px-3 rounded-xl bg-red-950/60 hover:bg-red-900/60 border border-red-700/60 text-red-300 text-xs font-bold transition-all"
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                        رفض
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* لوحة قرارات مسؤول المستشفى المتعاقد */}
+                {isHospitalReceiver && (
+                  <div className="p-4 rounded-2xl bg-blue-950/40 border border-blue-700/50 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-slate-100 text-xs flex items-center gap-1.5">
+                        <HospitalIcon className="w-4 h-4 text-blue-400" />
+                        قرارات قبول المستشفى المتعاقد
+                      </h4>
+                      <span className="text-[11px] font-semibold text-blue-300">
+                        {getHospital(selectedReferral.targetHospitalId)?.name}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleReviewAction('ACCEPTED')}
+                        className="btn-primary py-2 px-3.5 text-xs font-bold bg-brand-600 hover:bg-brand-500"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        قبول الحالة وتأكيد الاستقبال
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleReviewAction('HOSPITAL_RFI', 'مطلوب إشاعة رنين حديثة')}
+                        className="py-2 px-3 rounded-xl bg-purple-950/60 hover:bg-purple-900/60 border border-purple-700/60 text-purple-300 text-xs font-bold"
+                      >
+                        📝 طلب استيفاء إضافي
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleReviewAction('REJECTED', 'عدم توفر طاقة استيعابية')}
+                        className="py-2 px-3 rounded-xl bg-red-950/60 hover:bg-red-900/60 border border-red-700/60 text-red-300 text-xs font-bold"
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                        اعتذار / رفض
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -470,7 +718,7 @@ export function ReferralsList() {
                 onClick={closeModal}
                 className="btn-secondary text-xs"
               >
-                إغلاق
+                إغلاق النافذة
               </button>
             </div>
           </div>
