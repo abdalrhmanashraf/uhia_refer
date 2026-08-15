@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>مشروع مَسار — منظومة التحويلات الطبية الذكية للمستشفيات المتعاقدة | التأمين الصحي الشامل بالأقصر</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&family=Tajawal:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js for Interactive Metrics Presentation -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              200: '#a7f3d0',
+              300: '#6ee7b7',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b',
+              950: '#022c22',
+            },
+            accent: {
+              gold: '#f59e0b',
+              blue: '#0284c7',
+              rose: '#e11d48',
+              purple: '#9333ea'
+            }
+          },
+          fontFamily: {
+            sans: ['Cairo', 'Tajawal', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #090d16;
+      color: #f1f5f9;
+      font-family: 'Cairo', sans-serif;
+      scroll-behavior: smooth;
+    }
+
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+    }
+
+    .glow-brand {
+      box-shadow: 0 0 50px -10px rgba(16, 185, 129, 0.3);
+    }
+
+    .glow-accent {
+      box-shadow: 0 0 50px -10px rgba(2, 132, 199, 0.3);
+    }
+
+    .gradient-text-emerald {
+      background: linear-gradient(135deg, #34d399 0%, #10b981 50%, #059669 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .gradient-text-gold {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .timeline-badge {
+      box-shadow: 0 0 0 4px rgba(15, 23, 42, 1), 0 0 0 6px rgba(16, 185, 129, 0.4);
+    }
+
+    .print-sheet {
+      background: #ffffff;
+      color: #0f172a;
+    }
+
+    @media print {
+      body { background: #fff; color: #000; }
+      .no-print { display: none !important; }
+      .glass-panel { background: #fff; border: 1px solid #ccc; box-shadow: none; color: #000; }
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-brand-500 selection:text-white pb-24">
+
+  <!-- ── Top Navigation Bar ───────────────────────────────────────────── -->
+  <header class="sticky top-0 z-50 glass-panel border-b border-slate-800/80 px-6 py-4 no-print">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white shadow-lg shadow-brand-900/60">
+          <i data-lucide="activity" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl font-black text-white tracking-tight">مشروع مَسار</h1>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-brand-900/70 text-brand-300 border border-brand-700/50">
+              فرع محافظة الأقصر
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 font-semibold">الهيئة العامة للتأمين الصحي الشامل</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a href="https://uhia-referrals-luxor.web.app" target="_blank" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-brand-900/40">
+          <i data-lucide="external-link" class="w-4 h-4"></i>
+          <span>فتح المنظومة الحية</span>
+        </a>
+        <button onclick="window.print()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold border border-slate-700 transition-all flex items-center gap-1.5">
+          <i data-lucide="printer" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">طباعة العرض</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Hero Section ────────────────────────────────────────────────── -->
+  <section class="relative pt-12 pb-16 px-6 overflow-hidden">
+    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-brand-900/20 via-slate-950/0 to-transparent pointer-events-none"></div>
+    <div class="max-w-6xl mx-auto text-center space-y-6 relative">
+      
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-950/80 border border-brand-700/50 text-brand-300 text-xs font-bold animate-pulse">
+        <i data-lucide="sparkles" class="w-4 h-4 text-brand-400"></i>
+        وثيقة الرؤية الاستراتيجية والتشغيلية المعتمدة
+      </div>
+
+      <h1 class="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight">
+        التحويل الطبي المباشر للمستشفيات المتعاقدة
+        <br>
+        <span class="gradient-text-emerald">رقمنة المسار السريري وسد الفجوة الرقمية</span>
+      </h1>
+
+      <p class="text-base sm:text-lg text-slate-300 max-w-4xl mx-auto leading-relaxed">
+        منظومة رقمية رائدة تربط <strong class="text-emerald-400">75 وحدة ومركز طب أسرة بالأقصر</strong> مع <strong class="text-amber-400">إدارة المنافذ</strong> و<strong class="text-blue-400">المستشفيات الخاصة الـ 5 المتعاقدة</strong>؛ لإنهاء معاناة انتقال المنتفعين، وضبط المسار الطبي، وتوثيق الإجراءات الطبية المفقودة في الملف الإلكتروني الموحد.
+      </p>
+
+      <!-- Key Stakeholders Badges -->
+      <div class="pt-4 flex flex-wrap items-center justify-center gap-3 text-xs font-bold">
+        <div class="px-4 py-2 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-300 flex items-center gap-2">
+          <i data-lucide="user-check" class="w-4 h-4 text-emerald-400"></i>
+          <span>المدير العام: د. رحاب عبد الوهاب</span>
+        </div>
+        <div class="px-4 py-2 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-300 flex items-center gap-2">
+          <i data-lucide="shield-alert" class="w-4 h-4 text-amber-400"></i>
+          <span>مدير إدارة المنافذ: أ. أحمد أمين</span>
+        </div>
+        <div class="px-4 py-2 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-300 flex items-center gap-2">
+          <i data-lucide="building-2" class="w-4 h-4 text-blue-400"></i>
+          <span>5 مستشفيات متعاقدة معتمدة</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <main class="max-w-6xl mx-auto px-6 space-y-16">
+
+    <!-- ── 1. رحلة المريض: المقارنة الحتمية (قبل وبعد المنظومة) ───────── -->
+    <section class="space-y-6">
+      <div class="text-center space-y-2">
+        <h2 class="text-2xl sm:text-3xl font-black text-white flex items-center justify-center gap-2">
+          <i data-lucide="git-compare" class="w-7 h-7 text-brand-400"></i>
+          رحلة المنتفع للحصول على كشف أو إجراء طبي استشاري
+        </h2>
+        <p class="text-sm text-slate-400">الفارق الجذري بين المسار البيروقراطي التقليدي ومسار الرقمنة الذكي</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- المسار القديم التقليدي -->
+        <div class="glass-panel rounded-3xl p-6 sm:p-8 border-rose-900/40 relative overflow-hidden bg-gradient-to-br from-rose-950/20 to-slate-900/80">
+          <div class="flex items-center justify-between pb-4 border-b border-rose-900/30">
+            <div class="flex items-center gap-2 text-rose-400 font-black text-base">
+              <i data-lucide="x-circle" class="w-6 h-6"></i>
+              <h3>المسار القديم (إرهاق، تكدس، وتشتت)</h3>
+            </div>
+            <span class="text-[11px] font-bold px-2.5 py-1 rounded bg-rose-950 text-rose-300 border border-rose-800/60">3 محطات + إهدار وقت</span>
+          </div>
+
+          <div class="mt-6 space-y-5 text-sm text-slate-300">
+            <div class="flex items-start gap-3">
+              <span class="w-6 h-6 rounded-full bg-rose-900/60 border border-rose-700 text-rose-300 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+              <div>
+                <strong class="text-slate-100 block">وحدة الرعاية الأولية:</strong>
+                الكشف الأولي مع طبيب الأسرة، وكتابة ورقة إحالة يدوية تتطلب اعتماداً خارجياً.
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <span class="w-6 h-6 rounded-full bg-rose-900/60 border border-rose-700 text-rose-300 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+              <div>
+                <strong class="text-rose-300 block">التوجه الشاق لمقر الفرع / منافذ خدمة العملاء:</strong>
+                اضطرار المريض (خصوصاً كبار السن وأهالي القرى والمراكز البعيدة كإسنا وأرمنت) للسفر إلى مقر الفرع أو المنافذ للحصول على الجواب الورقي، مما يُحدث تكدساً وزحاماً رهيباً.
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <span class="w-6 h-6 rounded-full bg-rose-900/60 border border-rose-700 text-rose-300 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+              <div>
+                <strong class="text-slate-100 block">التوجه للمستشفى المتعاقد بدون موعد محدد:</strong>
+                الذهاب للمستشفى بالأوراق اليدوية مع احتمالية الرفض بسبب عدم توافر الطاقة الاستيعابية، دون تسجيل ما تم للمريض في ملفه الطبي الإلكتروني بهيئة الرعاية!
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- المسار الجديد عبر منظومة مسار -->
+        <div class="glass-panel rounded-3xl p-6 sm:p-8 border-brand-700/50 relative overflow-hidden bg-gradient-to-br from-brand-950/40 via-slate-900 to-slate-900 glow-brand">
+          <div class="flex items-center justify-between pb-4 border-b border-brand-800/40">
+            <div class="flex items-center gap-2 text-brand-400 font-black text-base">
+              <i data-lucide="check-circle-2" class="w-6 h-6 text-brand-400"></i>
+              <h3>مسار منظومة "مَسار" الذكية (صفر تكدس)</h3>
+            </div>
+            <span class="text-[11px] font-bold px-2.5 py-1 rounded bg-brand-900 text-brand-300 border border-brand-700">محطة واحدة فورية</span>
+          </div>
+
+          <div class="mt-6 space-y-5 text-sm text-slate-300">
+            <div class="flex items-start gap-3">
+              <span class="w-6 h-6 rounded-full bg-brand-900 border border-brand-500 text-brand-300 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+              <div>
+                <strong class="text-white block">من وحدة الرعاية الأولية مباشرة:</strong>
+                يسجل أخصائي الوحدة طلب التحويل بالرقم القومي مع رفع التقرير الطبي والتشخيص السريري إلكترونياً.
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <span class="w-6 h-6 rounded-full bg-brand-900 border border-brand-500 text-brand-300 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+              <div>
+                <strong class="text-brand-300 block">مراجعة واعتماد لحظي بإدارة المنافذ:</strong>
+                يقوم مدير إدارة المنافذ بمراجعة الجواب وتوجيهه لأفضل مستشفى متعاقد (كليوباترا، الندى، رؤية، العيون الدولي، الكمال) بضغطة زر واحدة.
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <span class="w-6 h-6 rounded-full bg-brand-900 border border-brand-500 text-brand-300 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+              <div>
+                <strong class="text-white block">توجه مباشر للمستشفى في موعد محدد:</strong>
+                يذهب المنتفع للمستشفى المتعاقد مباشرة التي تستقبله بناءً على قبول إلكتروني مسبق، مع توثيق كافة الإجراءات والعمليات بالكامل!
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── 2. القضية المحورية: سد الفجوة الرقمية مع هيئة الرعاية الصحية ── -->
+    <section class="glass-panel rounded-3xl p-8 border-amber-600/40 relative overflow-hidden bg-gradient-to-l from-amber-950/30 via-slate-900 to-slate-900">
+      <div class="max-w-4xl space-y-4">
+        <div class="flex items-center gap-2.5 text-amber-400 font-bold text-xs uppercase tracking-widest">
+          <i data-lucide="shield-alert" class="w-5 h-5"></i>
+          <span>سد الفجوة الرقمية الحرجة (Medical History Gap Closing)</span>
+        </div>
+        
+        <h3 class="text-2xl sm:text-3xl font-black text-white">
+          أين تكمن المشكلة الكبرى حالياً في العمليات والإجراءات الطبية بالقطاع الخاص؟
+        </h3>
+
+        <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+          عندما يقوم المريض بإجراء طبي أو جراحي داخل مستشفى متعاقد خاص (مثل: <span class="text-amber-300 font-bold">استئصال الزائدة الدودية، جراحات العيون المتقدمة، القساطر التداخلية، مناظير الجهاز الهضمي</span>)، فإن <strong class="text-red-400 underline decoration-red-500">سيستم هيئة الرعاية الصحية لا يُسجل عليه أي بيانات عن هذا الإجراء</strong>!
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          <div class="p-4 rounded-2xl bg-slate-950/70 border border-amber-700/30 space-y-2">
+            <h4 class="text-sm font-bold text-amber-300 flex items-center gap-2">
+              <i data-lucide="file-warning" class="w-4 h-4 text-amber-400"></i>
+              النتيجة السابقة الخطيرة
+            </h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              فقدان التاريخ المرضي للمريض داخل ملفه الطبي بوحدة الرعاية الأولية، وصعوبة المتابعة بعد الخروج، وتكرار التحاليل والأشعات دون داعٍ، وغياب الرقابة على مطالبات المستشفيات.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-brand-950/70 border border-brand-700/40 space-y-2">
+            <h4 class="text-sm font-bold text-brand-300 flex items-center gap-2">
+              <i data-lucide="file-check" class="w-4 h-4 text-brand-400"></i>
+              الحل الجذري عبر منظومة "مَسار"
+            </h4>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              تتبع خط سير المريض لحظياً، والحصول على بيان دقيق وتوثيق رسمي للإجراء الطبي المنفذ بالمستشفى، لإدراجه فوراً في ملف المنتفع الإلكتروني بالوحدة الصحية التابع لها.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 3. ما الذي تحدده منظومة مَسار بدقة استثنائية؟ ─────────────── -->
+    <section class="space-y-6">
+      <div class="text-center space-y-2">
+        <h2 class="text-2xl sm:text-3xl font-black text-white flex items-center justify-center gap-2">
+          <i data-lucide="scan" class="w-7 h-7 text-brand-400"></i>
+          التحليلات والمحددات الدقيقة التي توفرها المنظومة لصانع القرار
+        </h2>
+        <p class="text-sm text-slate-400">مؤشرات تشغيلية واستقصائية بالغة الحساسية والدقة</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        
+        <!-- كارت 1 -->
+        <div class="glass-panel p-6 rounded-2xl border-slate-800 space-y-3 hover:border-brand-500/50 transition-all">
+          <div class="w-10 h-10 rounded-xl bg-blue-950/80 border border-blue-700/50 flex items-center justify-center text-blue-400">
+            <i data-lucide="user-plus" class="w-5 h-5"></i>
+          </div>
+          <h3 class="text-base font-bold text-white">من يبدأ الخدمة في المستشفى مباشرة؟</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            كشف وتحديد المرضى الذين يتوجهون للمستشفيات المتعاقدة دون المرور بالمسار الطبي الإلزامي بوحدات الرعاية الأولية، لضبط حوكمة الإحالة.
+          </p>
+        </div>
+
+        <!-- كارت 2 -->
+        <div class="glass-panel p-6 rounded-2xl border-slate-800 space-y-3 hover:border-brand-500/50 transition-all">
+          <div class="w-10 h-10 rounded-xl bg-amber-950/80 border border-amber-700/50 flex items-center justify-center text-amber-400">
+            <i data-lucide="stethoscope" class="w-5 h-5"></i>
+          </div>
+          <h3 class="text-base font-bold text-white">من يُجري تدخلاً دون كشف استشاري؟</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            حصر دقيق لكافة الإجراءات والعمليات الجراحية التي تتم دون استشارة طبية مسبقة، لمنع التدخلات غير المبررة طبياً وحماية المنتفع وهيئة التأمين.
+          </p>
+        </div>
+
+        <!-- كارت 3 -->
+        <div class="glass-panel p-6 rounded-2xl border-slate-800 space-y-3 hover:border-brand-500/50 transition-all">
+          <div class="w-10 h-10 rounded-xl bg-emerald-950/80 border border-emerald-700/50 flex items-center justify-center text-emerald-400">
+            <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+          </div>
+          <h3 class="text-base font-bold text-white">معدلات التردد على المستشفيات الـ 5</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            قياس معدل التردد وتوزيع الحالات بعدالة بين المستشفيات المتعاقدة (كليوباترا، الندى، رؤية، العيون الدولي، الكمال) لتفادي تكدس جهة دون أخرى.
+          </p>
+        </div>
+
+        <!-- كارت 4 -->
+        <div class="glass-panel p-6 rounded-2xl border-slate-800 space-y-3 hover:border-brand-500/50 transition-all">
+          <div class="w-10 h-10 rounded-xl bg-purple-950/80 border border-purple-700/50 flex items-center justify-center text-purple-400">
+            <i data-lucide="users" class="w-5 h-5"></i>
+          </div>
+          <h3 class="text-base font-bold text-white">التركيبة الديموغرافية والفئات العمرية</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            تحليل دقيق لأعمار ونوع المنتفعين الأكثر طلباً للتحويلات المتعاقدة، مما يساعد في التخطيط الصحي الاستراتيجي وتوسيع التخصصات المطلوبة.
+          </p>
+        </div>
+
+        <!-- كارت 5 -->
+        <div class="glass-panel p-6 rounded-2xl border-slate-800 space-y-3 hover:border-brand-500/50 transition-all">
+          <div class="w-10 h-10 rounded-xl bg-rose-950/80 border border-rose-700/50 flex items-center justify-center text-rose-400">
+            <i data-lucide="timer" class="w-5 h-5"></i>
+          </div>
+          <h3 class="text-base font-bold text-white">متوسط سرعة إنجاز الكشف الطبي</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            حساب الوقت المستغرق بالساعات والدقائق من لحظة إنشاء الطلب بالوحدة ➔ مروره بالمراجعة ➔ قبول المستشفى ➔ تقديم الخدمة الطبية للمنتفع.
+          </p>
+        </div>
+
+        <!-- كارت 6 -->
+        <div class="glass-panel p-6 rounded-2xl border-slate-800 space-y-3 hover:border-brand-500/50 transition-all">
+          <div class="w-10 h-10 rounded-xl bg-teal-950/80 border border-teal-700/50 flex items-center justify-center text-teal-400">
+            <i data-lucide="receipt" class="w-5 h-5"></i>
+          </div>
+          <h3 class="text-base font-bold text-white">مطابقة ومطالبات مالية منضبطة</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            توفير سجل إلكتروني مشفر لكل حالة، بحيث لا يمكن للمستشفى تقديم مطالبة مالية دون وجود أمر إحالة وقبول معتمد إلكترونياً بالمنظومة.
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── 4. لوحة المستشفيات الـ 5 المعتمدة للتعاقد ─────────────────────── -->
+    <section class="space-y-6">
+      <div class="text-center space-y-2">
+        <h2 class="text-2xl sm:text-3xl font-black text-white flex items-center justify-center gap-2">
+          <i data-lucide="hospital" class="w-7 h-7 text-brand-400"></i>
+          شبكة مقدمي الخدمة المتعاقدين المعتمدة بالأقصر
+        </h2>
+        <p class="text-sm text-slate-400">المستشفيات الـ 5 الحصرية المعتمدة للتوجيه والإحالة داخل المنظومة</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        
+        <div class="glass-panel p-5 rounded-2xl border-slate-800 flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-brand-950 border border-brand-700/40 flex items-center justify-center text-brand-400 font-black text-lg">
+            01
+          </div>
+          <div>
+            <h4 class="font-bold text-white text-sm">مستشفى كليوباترا</h4>
+            <p class="text-xs text-slate-400">الأقصر • جراحة، قسطرة، أورام، باطنة</p>
+          </div>
+        </div>
+
+        <div class="glass-panel p-5 rounded-2xl border-slate-800 flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-brand-950 border border-brand-700/40 flex items-center justify-center text-brand-400 font-black text-lg">
+            02
+          </div>
+          <div>
+            <h4 class="font-bold text-white text-sm">مستشفى الندى</h4>
+            <p class="text-xs text-slate-400">الأقصر • نساء وتوليد، حضانات، جراحة عامة</p>
+          </div>
+        </div>
+
+        <div class="glass-panel p-5 rounded-2xl border-slate-800 flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-brand-950 border border-brand-700/40 flex items-center justify-center text-brand-400 font-black text-lg">
+            03
+          </div>
+          <div>
+            <h4 class="font-bold text-white text-sm">مركز رؤية للعيون</h4>
+            <p class="text-xs text-slate-400">الأقصر • جراحات الشبكية، الفاكو، الليزك</p>
+          </div>
+        </div>
+
+        <div class="glass-panel p-5 rounded-2xl border-slate-800 flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-brand-950 border border-brand-700/40 flex items-center justify-center text-brand-400 font-black text-lg">
+            04
+          </div>
+          <div>
+            <h4 class="font-bold text-white text-sm">مستشفى العيون الدولي</h4>
+            <p class="text-xs text-slate-400">الأقصر • جراحات العيون المتقدمة والمياه البيضاء</p>
+          </div>
+        </div>
+
+        <div class="glass-panel p-5 rounded-2xl border-slate-800 flex items-center gap-4 sm:col-span-2 lg:col-span-1">
+          <div class="w-12 h-12 rounded-xl bg-brand-950 border border-brand-700/40 flex items-center justify-center text-brand-400 font-black text-lg">
+            05
+          </div>
+          <div>
+            <h4 class="font-bold text-white text-sm">مستشفى الكمال</h4>
+            <p class="text-xs text-slate-400">الأقصر • عظام، جراحة مسالك، باطنة متخصصة</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── 5. العائد التشغيلي والمؤسسي (ROI & Impact) ───────────────────── -->
+    <section class="glass-panel rounded-3xl p-8 border-brand-800/40 bg-gradient-to-b from-slate-900 to-slate-950 space-y-8">
+      <div class="text-center space-y-2">
+        <h2 class="text-2xl sm:text-3xl font-black text-white">العائد التشغيلي والمؤسسي المباشر للمنظومة</h2>
+        <p class="text-sm text-slate-400">مخرجات ملموسة تنعكس على جودة الخدمة ورضا المواطنين بالأقصر</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
+        <div class="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
+          <p class="text-3xl font-black text-emerald-400 font-mono">100%</p>
+          <h4 class="text-xs font-bold text-slate-200">إلغاء التكدس بمقر الفرع</h4>
+          <p class="text-[11px] text-slate-500">لا حاجة لانتقال المواطن لطلب خطاب إحالة</p>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
+          <p class="text-3xl font-black text-brand-400 font-mono">75 وحدة</p>
+          <h4 class="text-xs font-bold text-slate-200">تغطية شاملة لمحافظة الأقصر</h4>
+          <p class="text-[11px] text-slate-500">ربط مراكز الأقصر، إسنا، أرمنت، البياضية والقرنة</p>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
+          <p class="text-3xl font-black text-amber-400 font-mono">&lt; 15 دقيقة</p>
+          <h4 class="text-xs font-bold text-slate-200">زمن الاعتماد والتوجيه</h4>
+          <p class="text-[11px] text-slate-500">مراجعة رقمية لحظية دون تأخير ورقي</p>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
+          <p class="text-3xl font-black text-blue-400 font-mono">Real-time</p>
+          <h4 class="text-xs font-bold text-slate-200">مزامنة سحابية متعددة الأجهزة</h4>
+          <p class="text-[11px] text-slate-500">متابعة حية من الموبايل والكمبيوتر لجميع الأطراف</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 6. خلاصة التوصية والجاهزية ─────────────────────────────────── -->
+    <section class="text-center space-y-6 py-6">
+      <div class="max-w-2xl mx-auto space-y-3">
+        <h3 class="text-2xl font-black text-white">المنظومة جاهزة للتشغيل الفوري والتجربة الحية</h3>
+        <p class="text-sm text-slate-400 leading-relaxed">
+          تم بناء وتجهيز وتدقيق النظام بالكامل وفق أعلى معايير أمن البيانات، وهو مرفوع ومتاح للاستخدام السحابي المباشر.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-center gap-4">
+        <a href="https://uhia-referrals-luxor.web.app" target="_blank" class="px-8 py-3.5 rounded-2xl bg-brand-600 hover:bg-brand-500 text-white font-black text-sm transition-all shadow-xl shadow-brand-900/50 flex items-center gap-2">
+          <i data-lucide="play-circle" class="w-5 h-5"></i>
+          <span>بدء تشغيل النظام الحي (uhia-referrals-luxor.web.app)</span>
+        </a>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── Footer ──────────────────────────────────────────────────────── -->
+  <footer class="mt-20 border-t border-slate-800/80 pt-8 text-center text-xs text-slate-500 space-y-2 no-print">
+    <p class="font-bold text-slate-400">منظومة مَسار — الهيئة العامة للتأمين الصحي الشامل (فرع محافظة الأقصر)</p>
+    <p>إدارة المنافذ • إعداد وتطوير: فريق التطوير الرقمي • 2026</p>
+  </footer>
+
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+  </script>
+</body>
+</html>

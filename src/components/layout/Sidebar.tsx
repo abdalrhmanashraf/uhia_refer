@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, FilePlus2, ListFilter, LogOut,
-  Shield, Users, Activity, ChevronDown, CheckCircle2, XCircle
+  Shield, Users, Activity, ChevronDown, CheckCircle2, XCircle, Sparkles
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useReferrals } from '../../context/ReferralsContext';
@@ -60,6 +60,12 @@ export function Sidebar() {
     path: '/rejected',
     badge: rejectedCount,
     badgeColor: 'bg-rose-900/60 text-rose-300 border-rose-700/50',
+  });
+
+  navItems.push({
+    label: 'شرح ودليل المنظومة',
+    icon: Sparkles,
+    path: '/overview',
   });
 
   if (isAdmin) {
