@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Referral, ReferralStatus } from '../types';
 
 interface ReferralsContextType {
@@ -8,11 +8,13 @@ interface ReferralsContextType {
   updateReferralStatus: (id: string, newStatus: ReferralStatus, comment?: string) => void;
   deleteReferral: (id: string) => void;
   clearAllReferrals: () => void;
+  isSyncing: boolean;
 }
 
 const ReferralsContext = createContext<ReferralsContextType | undefined>(undefined);
 
 const REFERRALS_STORAGE_KEY = 'masar_referrals_list_v2';
+const CLOUD_SYNC_ENDPOINT = 'https://api.restful-api.dev/objects/ff8081819ff5b11001a006fc4fd8276f';
 
 export const ReferralsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [referrals, setReferrals] = useState<Referral[]>(() => {
@@ -27,6 +29,67 @@ export const ReferralsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return [];
   });
 
+  const [isSyncing, setIsSyncing] = useState(false);
+  const isLocalUpdateRef = useRef(false);
+
+  // دالة المزامنة السحابية (رفع البيانات إلى السحابة ليراها كل المستخدمين والأجهزة)
+  const saveToCloud = async (currentList: Referral[]) => {
+    try {
+      setIsSyncing(true);
+      await fetch(CLOUD_SYNC_ENDPOINT, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'masar_luxor_referrals',
+          data: { referrals: currentList },
+        }),
+      });
+    } catch (err) {
+      console.warn('Cloud sync write warning:', err);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // دالة جلب البيانات السحابية الحية (لتحديث الشاشة فوراً عند قيام أي شخص آخر بعمل تحويل أو قبول)
+  const fetchFromCloud = async () => {
+    try {
+      const res = await fetch(CLOUD_SYNC_ENDPOINT);
+      if (res.ok) {
+        const json = await res.json();
+        const cloudReferrals: Referral[] = json?.data?.referrals;
+        if (Array.isArray(cloudReferrals)) {
+          setReferrals(prev => {
+            // نحدث فقط إذا كانت هناك بيانات جديدة أو مختلفة
+            const prevStr = JSON.stringify(prev);
+            const newStr = JSON.stringify(cloudReferrals);
+            if (prevStr !== newStr && !isLocalUpdateRef.current) {
+              localStorage.setItem(REFERRALS_STORAGE_KEY, newStr);
+              return cloudReferrals;
+            }
+            return prev;
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Cloud sync read warning:', err);
+    }
+  };
+
+  // المزامنة الدورية الحية في الخلفية كل 4 ثوانٍ
+  useEffect(() => {
+    fetchFromCloud();
+
+    const interval = setInterval(() => {
+      if (!isLocalUpdateRef.current) {
+        fetchFromCloud();
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // حفظ محلي دائم
   useEffect(() => {
     localStorage.setItem(REFERRALS_STORAGE_KEY, JSON.stringify(referrals));
   }, [referrals]);
@@ -44,22 +107,30 @@ export const ReferralsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       lastModifiedAt: now.toISOString(),
     };
 
-    setReferrals(prev => [newReferral, ...prev]);
+    const updated = [newReferral, ...referrals];
+    isLocalUpdateRef.current = true;
+    setReferrals(updated);
+    saveToCloud(updated);
+    setTimeout(() => { isLocalUpdateRef.current = false; }, 1000);
+
     return newReferral;
   };
 
   const updateReferral = (id: string, updatedData: Partial<Referral>) => {
-    setReferrals(prev =>
-      prev.map(r =>
-        r.id === id
-          ? {
-              ...r,
-              ...updatedData,
-              lastModifiedAt: new Date().toISOString(),
-            }
-          : r
-      )
+    const updated = referrals.map(r =>
+      r.id === id
+        ? {
+            ...r,
+            ...updatedData,
+            lastModifiedAt: new Date().toISOString(),
+          }
+        : r
     );
+
+    isLocalUpdateRef.current = true;
+    setReferrals(updated);
+    saveToCloud(updated);
+    setTimeout(() => { isLocalUpdateRef.current = false; }, 1000);
   };
 
   const updateReferralStatus = (id: string, newStatus: ReferralStatus, comment?: string) => {
@@ -70,12 +141,19 @@ export const ReferralsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const deleteReferral = (id: string) => {
-    setReferrals(prev => prev.filter(r => r.id !== id));
+    const updated = referrals.filter(r => r.id !== id);
+    isLocalUpdateRef.current = true;
+    setReferrals(updated);
+    saveToCloud(updated);
+    setTimeout(() => { isLocalUpdateRef.current = false; }, 1000);
   };
 
   const clearAllReferrals = () => {
+    isLocalUpdateRef.current = true;
     setReferrals([]);
     localStorage.removeItem(REFERRALS_STORAGE_KEY);
+    saveToCloud([]);
+    setTimeout(() => { isLocalUpdateRef.current = false; }, 1000);
   };
 
   return (
@@ -87,6 +165,7 @@ export const ReferralsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         updateReferralStatus,
         deleteReferral,
         clearAllReferrals,
+        isSyncing,
       }}
     >
       {children}
