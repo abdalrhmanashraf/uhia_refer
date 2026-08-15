@@ -71,7 +71,7 @@ export function Presentation() {
           </div>
           <div>
             <p className="text-[11px] text-slate-400">نطاق التغطية</p>
-            <p className="text-sm font-black text-slate-100">75 وحدة + 5 مستشفيات خاصة</p>
+            <p className="text-sm font-black text-slate-100">69 وحدة + 5 مستشفيات خاصة</p>
           </div>
         </div>
       </div>
@@ -346,7 +346,7 @@ export function Presentation() {
         </div>
 
         <div className="glass-card p-5 rounded-2xl border-slate-800 space-y-1">
-          <p className="text-2xl sm:text-3xl font-black text-brand-400 font-mono">75 وحدة</p>
+          <p className="text-2xl sm:text-3xl font-black text-brand-400 font-mono">69 وحدة</p>
           <h4 className="text-xs font-bold text-slate-200">تغطية شاملة لمحافظة الأقصر</h4>
           <p className="text-[10px] text-slate-500">ربط مراكز الأقصر، إسنا، أرمنت، البياضية والقرنة</p>
         </div>
