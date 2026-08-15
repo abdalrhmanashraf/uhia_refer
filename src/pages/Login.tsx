@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, Lock, User, AlertCircle, ArrowRight, Key } from 'lucide-react';
+import { Activity, Lock, User, AlertCircle, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export function Login() {
   const navigate = useNavigate();
   const { login, switchUser } = useAuth();
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('0000');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -69,7 +69,7 @@ export function Login() {
                   required
                   value={username}
                   onChange={e => setUsername(e.target.value)}
-                  placeholder="admin"
+                  placeholder="اسم المستخدم"
                   className="form-input pr-10 font-mono text-sm"
                 />
                 <User className="w-4 h-4 text-slate-500 absolute right-3.5 top-3.5" />
@@ -84,27 +84,17 @@ export function Login() {
                   required
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  placeholder="••••"
+                  placeholder="••••••••"
                   className="form-input pr-10 font-mono text-sm"
                 />
                 <Lock className="w-4 h-4 text-slate-500 absolute right-3.5 top-3.5" />
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-              <span className="flex items-center gap-1.5">
-                <Key className="w-3.5 h-3.5 text-amber-400" />
-                حساب الأدمن: <strong className="text-slate-200 font-mono">admin</strong>
-              </span>
-              <span>
-                الرمز: <strong className="text-amber-300 font-mono">0000</strong>
-              </span>
-            </div>
-
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full justify-center py-3 text-base font-bold shadow-lg shadow-brand-900/40"
+              className="btn-primary w-full justify-center py-3 text-base font-bold shadow-lg shadow-brand-900/40 mt-2"
             >
               <span>تسجيل الدخول</span>
               <ArrowRight className="w-4 h-4" />
@@ -142,7 +132,7 @@ export function Login() {
                 className="p-2 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 text-slate-200 font-semibold text-right transition-colors"
               >
                 <span className="block text-[11px] text-brand-400">أخصائي منفذ</span>
-                شيماء خالد
+                جمال عبد الناصر
               </button>
 
               <button
