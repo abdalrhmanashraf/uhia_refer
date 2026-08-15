@@ -137,7 +137,11 @@ export function ReferralsList() {
     }, 1500);
   };
 
+  const isHospital = user?.role === 'HOSPITAL_RECEIVER';
+  const myHospitalId = user?.hospitalId;
+
   const filtered = referrals.filter(r => {
+    if (isHospital && myHospitalId && r.targetHospitalId !== myHospitalId) return false;
     const matchSearch = !search ||
       r.patientName.includes(search) ||
       r.nationalId.includes(search) ||
@@ -598,6 +602,39 @@ export function ReferralsList() {
                       className="form-input text-xs resize-none"
                       placeholder="وصف تفصيلي للتشخيص وسبب التحويل للمستشفى المتعاقد..."
                     />
+                  </div>
+
+                  {/* فحص المرفقات والتقارير الطبية للمستشفى والمراجع */}
+                  <div className="sm:col-span-2 p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-300 flex items-center gap-1.5">
+                        <FileText className="w-4 h-4 text-blue-400" />
+                        المرفقات والتقارير الطبية المرفوعة مع الطلب:
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono">2 ملفات معتمدة</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                      <div className="p-2.5 rounded-lg bg-slate-800/80 border border-slate-700/60 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                          <span className="text-slate-200 font-mono text-[11px]">التقرير_الطبي_المعتمد.pdf</span>
+                        </div>
+                        <span className="text-[10px] text-brand-400 font-bold bg-brand-900/40 px-2 py-0.5 rounded border border-brand-700/40">
+                          جاهز للفحص ✓
+                        </span>
+                      </div>
+
+                      <div className="p-2.5 rounded-lg bg-slate-800/80 border border-slate-700/60 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-blue-400" />
+                          <span className="text-slate-200 font-mono text-[11px]">صورة_الرقم_القومي.jpg</span>
+                        </div>
+                        <span className="text-[10px] text-brand-400 font-bold bg-brand-900/40 px-2 py-0.5 rounded border border-brand-700/40">
+                          جاهز للفحص ✓
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
                   {/* ملاحظات وتوجيهات إدارة المنافذ */}

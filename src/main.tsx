@@ -8,6 +8,8 @@ import { Layout } from './components/layout/Layout'
 import { Dashboard } from './pages/Dashboard'
 import { NewReferral } from './pages/NewReferral'
 import { ReferralsList } from './pages/ReferralsList'
+import { AcceptedReferrals } from './pages/AcceptedReferrals'
+import { RejectedReferrals } from './pages/RejectedReferrals'
 import { UsersManagement } from './pages/UsersManagement'
 import { Login } from './pages/Login'
 
@@ -22,6 +24,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               <Route index element={<Dashboard />} />
               <Route path="new-referral" element={<NewReferral />} />
               <Route path="referrals" element={<ReferralsList />} />
+              <Route path="accepted" element={<AcceptedReferrals />} />
+              <Route path="rejected" element={<RejectedReferrals />} />
               <Route path="users" element={<UsersManagement />} />
             </Route>
           </Routes>

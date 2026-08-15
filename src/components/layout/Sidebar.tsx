@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, FilePlus2, ListFilter, LogOut,
-  Shield, Users, Activity, ChevronDown
+  Shield, Users, Activity, ChevronDown, CheckCircle2, XCircle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useReferrals } from '../../context/ReferralsContext';
 
 const roleLabels: Record<string, { label: string; color: string }> = {
   SYSTEM_ADMIN: { label: 'مسؤول النظام', color: 'text-rose-400 bg-rose-950/60 border-rose-800/50' },
@@ -15,6 +16,7 @@ const roleLabels: Record<string, { label: string; color: string }> = {
 
 export function Sidebar() {
   const { user, logout, switchUser, allUsers, isAdmin } = useAuth();
+  const { referrals } = useReferrals();
   const navigate = useNavigate();
   const [showSwitcher, setShowSwitcher] = useState(false);
 
@@ -23,11 +25,42 @@ export function Sidebar() {
     navigate('/login');
   };
 
-  const navItems = [
+  const isHospital = user?.role === 'HOSPITAL_RECEIVER';
+  const myHospitalId = user?.hospitalId;
+
+  // الحسابات الخاصة بالمستشفى أو النظام
+  const visibleReferrals = referrals.filter(r => {
+    if (isHospital && myHospitalId) return r.targetHospitalId === myHospitalId;
+    return true;
+  });
+
+  const acceptedCount = visibleReferrals.filter(r => r.status === 'ACCEPTED').length;
+  const rejectedCount = visibleReferrals.filter(r => r.status === 'REJECTED').length;
+
+  const navItems: { label: string; icon: any; path: string; badge?: number; badgeColor?: string }[] = [
     { label: 'لوحة القيادة', icon: LayoutDashboard, path: '/' },
-    { label: 'طلب تحويل جديد', icon: FilePlus2, path: '/new-referral' },
-    { label: 'قائمة التحويلات', icon: ListFilter, path: '/referrals' },
   ];
+
+  // المستشفى لا تنشئ تحويلات إطلاقاً — فقط تستقبل وتقبل أو ترفض
+  if (!isHospital) {
+    navItems.push({ label: 'طلب تحويل جديد', icon: FilePlus2, path: '/new-referral' });
+  }
+
+  navItems.push({ label: 'قائمة التحويلات', icon: ListFilter, path: '/referrals' });
+  navItems.push({
+    label: 'الحالات المقبولة',
+    icon: CheckCircle2,
+    path: '/accepted',
+    badge: acceptedCount,
+    badgeColor: 'bg-emerald-900/60 text-emerald-300 border-emerald-700/50',
+  });
+  navItems.push({
+    label: 'الحالات المرفوضة',
+    icon: XCircle,
+    path: '/rejected',
+    badge: rejectedCount,
+    badgeColor: 'bg-rose-900/60 text-rose-300 border-rose-700/50',
+  });
 
   if (isAdmin) {
     navItems.push({ label: 'إدارة المستخدمين', icon: Users, path: '/users' });
@@ -113,11 +146,18 @@ export function Sidebar() {
             to={item.path}
             end={item.path === '/'}
             className={({ isActive }) =>
-              `nav-link ${isActive ? 'nav-link-active' : ''}`
+              `nav-link flex items-center justify-between ${isActive ? 'nav-link-active' : ''}`
             }
           >
-            <item.icon className="w-4 h-4 flex-shrink-0" />
-            <span className="text-sm font-semibold">{item.label}</span>
+            <div className="flex items-center gap-2.5">
+              <item.icon className="w-4 h-4 flex-shrink-0" />
+              <span className="text-sm font-semibold">{item.label}</span>
+            </div>
+            {item.badge !== undefined && item.badge > 0 && (
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${item.badgeColor}`}>
+                {item.badge}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>
